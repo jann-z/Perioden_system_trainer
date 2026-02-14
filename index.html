@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSE Trainer - Iteratives Lernen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .element-grid {
+            display: grid;
+            grid-template-columns: repeat(18, minmax(30px, 1fr));
+            gap: 2px;
+        }
+        @media (min-width: 640px) { .element-grid { gap: 4px; } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 select-none font-sans">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const allElements = [
+            {n:1,s:"H",name:"Wasserstoff",g:1,p:1,cat:"nonmetal"},{n:2,s:"He",name:"Helium",g:18,p:1,cat:"noble"},
+            {n:3,s:"Li",name:"Lithium",g:1,p:2,cat:"alkali"},{n:4,s:"Be",name:"Beryllium",g:2,p:2,cat:"alkaline"},
+            {n:5,s:"B",name:"Bor",g:13,p:2,cat:"metalloid"},{n:6,s:"C",name:"Kohlenstoff",g:14,p:2,cat:"nonmetal"},
+            {n:7,s:"N",name:"Stickstoff",g:15,p:2,cat:"nonmetal"},{n:8,s:"O",name:"Sauerstoff",g:16,p:2,cat:"nonmetal"},
+            {n:9,s:"F",name:"Fluor",g:17,p:2,cat:"halogen"},{n:10,s:"Ne",name:"Neon",g:18,p:2,cat:"noble"},
+            {n:11,s:"Na",name:"Natrium",g:1,p:3,cat:"alkali"},{n:12,s:"Mg",name:"Magnesium",g:2,p:3,cat:"alkaline"},
+            {n:13,s:"Al",name:"Aluminium",g:13,p:3,cat:"metal"},{n:14,s:"Si",name:"Silicium",g:14,p:3,cat:"metalloid"},
+            {n:15,s:"P",name:"Phosphor",g:15,p:3,cat:"nonmetal"},{n:16,s:"S",name:"Schwefel",g:16,p:3,cat:"nonmetal"},
+            {n:17,s:"Cl",name:"Chlor",g:17,p:3,cat:"halogen"},{n:18,s:"Ar",name:"Argon",g:18,p:3,cat:"noble"},
+            {n:19,s:"K",name:"Kalium",g:1,p:4,cat:"alkali"},{n:20,s:"Ca",name:"Calcium",g:2,p:4,cat:"alkaline"},
+            {n:21,s:"Sc",name:"Scandium",g:3,p:4,cat:"transition"},{n:22,s:"Ti",name:"Titan",g:4,p:4,cat:"transition"},
+            {n:23,s:"V",name:"Vanadium",g:5,p:4,cat:"transition"},{n:24,s:"Cr",name:"Chrom",g:6,p:4,cat:"transition"},
+            {n:25,s:"Mn",name:"Mangan",g:7,p:4,cat:"transition"},{n:26,s:"Fe",name:"Eisen",g:8,p:4,cat:"transition"},
+            {n:27,s:"Co",name:"Cobalt",g:9,p:4,cat:"transition"},{n:28,s:"Ni",name:"Nickel",g:10,p:4,cat:"transition"},
+            {n:29,s:"Cu",name:"Kupfer",g:11,p:4,cat:"transition"},{n:30,s:"Zn",name:"Zink",g:12,p:4,cat:"transition"},
+            {n:31,s:"Ga",name:"Gallium",g:13,p:4,cat:"metal"},{n:32,s:"Ge",name:"Germanium",g:14,p:4,cat:"metalloid"},
+            {n:33,s:"As",name:"Arsen",g:15,p:4,cat:"metalloid"},{n:34,s:"Se",name:"Selen",g:16,p:4,cat:"nonmetal"},
+            {n:35,s:"Br",name:"Brom",g:17,p:4,cat:"halogen"},{n:36,s:"Kr",name:"Krypton",g:18,p:4,cat:"noble"},
+            {n:37,s:"Rb",name:"Rubidium",g:1,p:5,cat:"alkali"},{n:38,s:"Sr",name:"Strontium",g:2,p:5,cat:"alkaline"},
+            {n:39,s:"Y",name:"Yttrium",g:3,p:5,cat:"transition"},{n:40,s:"Zr",name:"Zirconium",g:4,p:5,cat:"transition"},
+            {n:41,s:"Nb",name:"Niob",g:5,p:5,cat:"transition"},{n:42,s:"Mo",name:"Molybdän",g:6,p:5,cat:"transition"},
+            {n:43,s:"Tc",name:"Technetium",g:7,p:5,cat:"transition"},{n:44,s:"Ru",name:"Ruthenium",g:8,p:5,cat:"transition"},
+            {n:45,s:"Rh",name:"Rhodium",g:9,p:5,cat:"transition"},{n:46,s:"Pd",name:"Palladium",g:10,p:5,cat:"transition"},
+            {n:47,s:"Ag",name:"Silber",g:11,p:5,cat:"transition"},{n:48,s:"Cd",name:"Cadmium",g:12,p:5,cat:"transition"},
+            {n:49,s:"In",name:"Indium",g:13,p:5,cat:"metal"},{n:50,s:"Sn",name:"Zinn",g:14,p:5,cat:"metal"},
+            {n:51,s:"Sb",name:"Antimon",g:15,p:5,cat:"metalloid"},{n:52,s:"Te",name:"Tellur",g:16,p:5,cat:"metalloid"},
+            {n:53,s:"I",name:"Iod",g:17,p:5,cat:"halogen"},{n:54,s:"Xe",name:"Xenon",g:18,p:5,cat:"noble"},
+            {n:55,s:"Cs",name:"Caesium",g:1,p:6,cat:"alkali"},{n:56,s:"Ba",name:"Barium",g:2,p:6,cat:"alkaline"},
+            {n:57,s:"La",name:"Lanthan",g:3,p:6,cat:"lanthanide"},
+            {n:72,s:"Hf",name:"Hafnium",g:4,p:6,cat:"transition"},{n:73,s:"Ta",name:"Tantal",g:5,p:6,cat:"transition"},
+            {n:74,s:"W",name:"Wolfram",g:6,p:6,cat:"transition"},{n:75,s:"Re",name:"Rhenium",g:7,p:6,cat:"transition"},
+            {n:76,s:"Os",name:"Osmium",g:8,p:6,cat:"transition"},{n:77,s:"Ir",name:"Iridium",g:9,p:6,cat:"transition"},
+            {n:78,s:"Pt",name:"Platin",g:10,p:6,cat:"transition"},{n:79,s:"Au",name:"Gold",g:11,p:6,cat:"transition"},
+            {n:80,s:"Hg",name:"Quecksilber",g:12,p:6,cat:"transition"},{n:81,s:"Tl",name:"Thallium",g:13,p:6,cat:"metal"},
+            {n:82,s:"Pb",name:"Blei",g:14,p:6,cat:"metal"},{n:83,s:"Bi",name:"Bismut",g:15,p:6,cat:"metal"},
+            {n:84,s:"Po",name:"Polonium",g:16,p:6,cat:"metal"},{n:85,s:"At",name:"Astat",g:17,p:6,cat:"halogen"},
+            {n:86,s:"Rn",name:"Radon",g:18,p:6,cat:"noble"},
+            {n:87,s:"Fr",name:"Francium",g:1,p:7,cat:"alkali"},{n:88,s:"Ra",name:"Radium",g:2,p:7,cat:"alkaline"},
+            {n:89,s:"Ac",name:"Actinium",g:3,p:7,cat:"actinide"},
+            {n:104,s:"Rf",name:"Rutherfordium",g:4,p:7,cat:"transition"},{n:105,s:"Db",name:"Dubnium",g:5,p:7,cat:"transition"},
+            {n:106,s:"Sg",name:"Seaborgium",g:6,p:7,cat:"transition"},{n:107,s:"Bh",name:"Bohrium",g:7,p:7,cat:"transition"},
+            {n:108,s:"Hs",name:"Hassium",g:8,p:7,cat:"transition"},{n:109,s:"Mt",name:"Meitnerium",g:9,p:7,cat:"transition"},
+            {n:110,s:"Ds",name:"Darmstadtium",g:10,p:7,cat:"transition"},{n:111,s:"Rg",name:"Roentgenium",g:11,p:7,cat:"transition"},
+            {n:112,s:"Cn",name:"Copernicium",g:12,p:7,cat:"transition"},{n:113,s:"Nh",name:"Nihonium",g:13,p:7,cat:"metal"},
+            {n:114,s:"Fl",name:"Flerovium",g:14,p:7,cat:"metal"},{n:115,s:"Mc",name:"Moscovium",g:15,p:7,cat:"metal"},
+            {n:116,s:"Lv",name:"Livermorium",g:16,p:7,cat:"metal"},{n:117,s:"Ts",name:"Tenness",g:17,p:7,cat:"halogen"},
+            {n:118,s:"Og",name:"Oganesson",g:18,p:7,cat:"noble"},
+            {n:58,s:"Ce",name:"Cer",g:4,p:9,cat:"lanthanide"},{n:59,s:"Pr",name:"Praseodym",g:5,p:9,cat:"lanthanide"},{n:60,s:"Nd",name:"Neodym",g:6,p:9,cat:"lanthanide"},{n:61,s:"Pm",name:"Promethium",g:7,p:9,cat:"lanthanide"},{n:62,s:"Sm",name:"Samarium",g:8,p:9,cat:"lanthanide"},{n:63,s:"Eu",name:"Europium",g:9,p:9,cat:"lanthanide"},{n:64,s:"Gd",name:"Gadolinium",g:10,p:9,cat:"lanthanide"},{n:65,s:"Tb",name:"Terbium",g:11,p:9,cat:"lanthanide"},{n:66,s:"Dy",name:"Dysprosium",g:12,p:9,cat:"lanthanide"},{n:67,s:"Ho",name:"Holmium",g:13,p:9,cat:"lanthanide"},{n:68,s:"Er",name:"Erbium",g:14,p:9,cat:"lanthanide"},{n:69,s:"Tm",name:"Thulium",g:15,p:9,cat:"lanthanide"},{n:70,s:"Yb",name:"Ytterbium",g:16,p:9,cat:"lanthanide"},{n:71,s:"Lu",name:"Lutetium",g:17,p:9,cat:"lanthanide"},
+            {n:90,s:"Th",name:"Thorium",g:4,p:10,cat:"actinide"},{n:91,s:"Pa",name:"Protactinium",g:5,p:10,cat:"actinide"},{n:92,s:"U",name:"Uran",g:6,p:10,cat:"actinide"},{n:93,s:"Np",name:"Neptunium",g:7,p:10,cat:"actinide"},{n:94,s:"Pu",name:"Plutonium",g:8,p:10,cat:"actinide"},{n:95,s:"Am",name:"Americium",g:9,p:10,cat:"actinide"},{n:96,s:"Cm",name:"Curium",g:10,p:10,cat:"actinide"},{n:97,s:"Bk",name:"Berkelium",g:11,p:10,cat:"actinide"},{n:98,s:"Cf",name:"Californium",g:12,p:10,cat:"actinide"},{n:99,s:"Es",name:"Einsteinium",g:13,p:10,cat:"actinide"},{n:100,s:"Fm",name:"Fermium",g:14,p:10,cat:"actinide"},{n:101,s:"Md",name:"Mendelevium",g:15,p:10,cat:"actinide"},{n:102,s:"No",name:"Nobelium",g:16,p:10,cat:"actinide"},{n:103,s:"Lr",name:"Lawrencium",g:17,p:10,cat:"actinide"}
+        ];
+
+        const defaultSelection = [
+            1, 3, 11, 19, 37, 55, 87, // H, Li, Na, K, Rb, Cs, Fr
+            4, 12, 20, 38, 56, 88, // Be, Mg, Ca, Sr, Ba, Ra
+            22, 24, 25, 26, 27, 28, 29, 30, // Ti, Cr, Mn, Fe, Co, Ni, Cu, Zn
+            46, 47, 48, // Pd, Ag, Cd
+            77, 78, 79, 80, // Ir, Pt, Au, Hg
+            5, 13, 31, 49, 81, // B, Al, Ga, In, Tl
+            6, 14, 32, 50, 82, // C, Si, Ge, Sn, Pb
+            7, 15, 33, 51, 83, // N, P, As, Sb, Bi
+            8, 16, 34, 52, 84, // O, S, Se, Te, Po
+            9, 17, 35, 53, 85, // F, Cl, Br, I, At
+            2, 10, 18, 36, 54, 86 // He, Ne, Ar, Kr, Xe, Rn
+        ];
+
+        const Icon = ({ name, size = 18 }) => {
+            useEffect(() => { if(window.lucide) lucide.createIcons(); }, [name]);
+            return <i data-lucide={name} style={{ width: size, height: size }}></i>;
+        };
+
+        const getCatColor = (cat) => {
+            const colors = {
+                alkali: 'bg-red-200 border-red-400',
+                alkaline: 'bg-orange-200 border-orange-400',
+                transition: 'bg-yellow-100 border-yellow-300',
+                metal: 'bg-slate-300 border-slate-400',
+                metalloid: 'bg-teal-200 border-teal-400',
+                nonmetal: 'bg-green-200 border-green-400',
+                halogen: 'bg-blue-200 border-blue-400',
+                noble: 'bg-purple-200 border-purple-400',
+                lanthanide: 'bg-pink-100 border-pink-300',
+                actinide: 'bg-pink-200 border-pink-400'
+            };
+            return colors[cat] || 'bg-white border-slate-200';
+        };
+
+        function App() {
+            const [view, setView] = useState('selection');
+            const [selectedIds, setSelectedIds] = useState(new Set(defaultSelection));
+            const [wrongIdsFromLastRound, setWrongIdsFromLastRound] = useState(new Set());
+            const [quizMode, setQuizMode] = useState('sToN'); 
+            const [quizState, setQuizState] = useState({ 
+                queue: [], 
+                idx: 0, 
+                correctCount: 0, 
+                input: '', 
+                isRevealed: false, 
+                lastCorrect: false,
+                currentErrors: new Set() // Fehler innerhalb der aktuellen Runde
+            });
+
+            const toggleElement = (id) => {
+                const n = new Set(selectedIds);
+                if (n.has(id)) n.delete(id); else n.add(id);
+                setSelectedIds(n);
+            };
+
+            const toggleGroup = (g) => {
+                const group = allElements.filter(e => e.g === g && e.p <= 7).map(e => e.n);
+                const n = new Set(selectedIds);
+                const allIn = group.every(id => n.has(id));
+                group.forEach(id => allIn ? n.delete(id) : n.add(id));
+                setSelectedIds(n);
+            };
+
+            const startQuiz = (mode, subsetIds = null) => {
+                const list = subsetIds || Array.from(selectedIds);
+                if (list.length === 0) return;
+                
+                const shuffled = list.map(id => allElements.find(e => e.n === id)).sort(() => Math.random() - 0.5);
+                
+                setQuizMode(mode);
+                setQuizState({ 
+                    queue: shuffled, 
+                    idx: 0, 
+                    correctCount: 0, 
+                    input: '', 
+                    isRevealed: false, 
+                    lastCorrect: false,
+                    currentErrors: new Set() // Neue Runde, leere Fehlerliste
+                });
+                setView('quiz');
+            };
+
+            const handleCheck = (e) => {
+                e.preventDefault();
+                if (quizState.isRevealed) { nextQuestion(); return; }
+
+                const current = quizState.queue[quizState.idx];
+                const input = quizState.input.trim().toLowerCase();
+                const target = quizMode === 'sToN' ? current.name.toLowerCase() : current.s.toLowerCase();
+                const isCorrect = input === target;
+
+                const newErrors = new Set(quizState.currentErrors);
+                if (!isCorrect) {
+                    newErrors.add(current.n);
+                }
+
+                setQuizState(prev => ({ 
+                    ...prev, 
+                    isRevealed: true, 
+                    lastCorrect: isCorrect, 
+                    correctCount: isCorrect ? prev.correctCount + 1 : prev.correctCount,
+                    currentErrors: newErrors
+                }));
+            };
+
+            const nextQuestion = () => {
+                if (quizState.idx >= quizState.queue.length - 1) {
+                    setWrongIdsFromLastRound(quizState.currentErrors);
+                    setView('summary');
+                } else {
+                    setQuizState(prev => ({ ...prev, idx: prev.idx + 1, input: '', isRevealed: false }));
+                }
+            };
+
+            if (view === 'selection') {
+                return (
+                    <div className="min-h-screen flex flex-col">
+                        <header className="bg-white border-b p-4 sticky top-0 z-50 flex flex-wrap justify-between items-center gap-4 shadow-sm">
+                            <div className="flex flex-col">
+                                <h1 className="text-xl font-bold flex items-center gap-2 text-slate-800"><Icon name="beaker" /> PSE Trainer</h1>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Wähle deine Elemente aus</p>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <button onClick={() => setSelectedIds(new Set())} className="text-xs text-slate-400 hover:text-red-500 font-bold transition-colors">Alles abwählen</button>
+                                <span className="px-4 py-1.5 bg-indigo-50 text-indigo-700 rounded-full text-xs font-black ring-1 ring-indigo-100">{selectedIds.size} gewählt</span>
+                                <button onClick={() => setView('mode')} disabled={selectedIds.size === 0} className="bg-indigo-600 text-white px-8 py-2 rounded-xl font-black text-sm hover:bg-indigo-700 disabled:opacity-20 transition-all shadow-md active:scale-95">Starten</button>
+                            </div>
+                        </header>
+                        <main className="p-4 sm:p-10 overflow-auto flex-1 custom-scrollbar">
+                            <div className="min-w-[900px] max-w-7xl mx-auto">
+                                <div className="element-grid mb-10">
+                                    {Array.from({length: 18}, (_, i) => i + 1).map(g => (
+                                        <button key={g} onClick={() => toggleGroup(g)} className="text-[10px] font-black text-slate-300 hover:text-indigo-600 py-1 transition-colors" style={{ gridColumn: g }}>{g}</button>
+                                    ))}
+                                    {allElements.map(e => (
+                                        <div key={e.n} onClick={() => toggleElement(e.n)} style={{ gridColumn: e.g, gridRow: e.p + 1 }}
+                                            className={`relative flex flex-col items-center justify-center border rounded p-1 cursor-pointer transition-all aspect-square text-center shadow-sm ${selectedIds.has(e.n) ? 'ring-2 ring-indigo-500 ring-offset-1 z-10 scale-110 shadow-lg' : 'opacity-70 hover:opacity-100 hover:scale-105'} ${getCatColor(e.cat)}`}>
+                                            <span className="absolute top-0.5 left-0.5 text-[8px] opacity-60 font-bold">{e.n}</span>
+                                            <span className="font-bold text-sm leading-none">{e.s}</span>
+                                            <span className="text-[7px] truncate w-full hidden md:block mt-0.5 font-bold uppercase tracking-tighter">{e.name}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </main>
+                    </div>
+                );
+            }
+
+            if (view === 'mode') {
+                return (
+                    <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
+                        <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl border w-full max-w-md text-center">
+                            <button onClick={() => setView('selection')} className="text-slate-300 text-xs mb-8 flex items-center justify-center gap-1 hover:text-indigo-600 font-bold transition-colors"><Icon name="chevron-left" size={14} /> Zurück zur Auswahl</button>
+                            <h2 className="text-3xl font-black mb-1 text-slate-800">Quizmodus</h2>
+                            <p className="text-slate-400 mb-10 text-xs font-bold uppercase tracking-[0.2em]">{selectedIds.size} Elemente im Pool</p>
+                            <div className="space-y-4 text-left">
+                                <button onClick={() => startQuiz('sToN')} className="w-full p-6 rounded-2xl border-2 border-slate-50 hover:border-indigo-500 hover:bg-indigo-50 transition-all flex justify-between items-center group shadow-sm">
+                                    <div><div className="font-black text-slate-800">Symbol → Name</div><div className="text-xs text-slate-400 font-bold italic">Du siehst "Fe", tippst "Eisen"</div></div>
+                                    <Icon name="chevron-right" className="text-slate-200 group-hover:text-indigo-600" />
+                                </button>
+                                <button onClick={() => startQuiz('nToS')} className="w-full p-6 rounded-2xl border-2 border-slate-50 hover:border-indigo-500 hover:bg-indigo-50 transition-all flex justify-between items-center group shadow-sm">
+                                    <div><div className="font-black text-slate-800">Name → Symbol</div><div className="text-xs text-slate-400 font-bold italic">Du siehst "Gold", tippst "Au"</div></div>
+                                    <Icon name="chevron-right" className="text-slate-200 group-hover:text-indigo-600" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (view === 'quiz') {
+                const current = quizState.queue[quizState.idx];
+                const progress = (quizState.idx / quizState.queue.length) * 100;
+                return (
+                    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-indigo-50">
+                        <div className="fixed top-0 left-0 w-full h-2 bg-indigo-100"><div className="h-full bg-indigo-600 transition-all duration-300 shadow-md" style={{ width: `${progress}%` }}></div></div>
+                        <div className="max-w-md w-full bg-white rounded-[3rem] shadow-2xl p-10 text-center relative border border-white">
+                            <button onClick={() => setView('selection')} className="absolute top-6 left-6 text-slate-200 hover:text-red-400 transition-colors"><Icon name="x" /></button>
+                            <div className="text-indigo-300 text-[10px] font-black uppercase tracking-[0.3em] mb-8 italic">Karte {quizState.idx + 1} / {quizState.queue.length}</div>
+                            <div className={`w-40 h-40 mx-auto rounded-3xl flex items-center justify-center text-4xl font-black mb-10 transition-all duration-500 shadow-xl ${quizState.isRevealed ? (quizState.lastCorrect ? 'bg-green-100 text-green-700 ring-8 ring-green-50' : 'bg-red-100 text-red-700 ring-8 ring-red-50') : 'bg-indigo-600 text-white'}`}>
+                                {quizMode === 'sToN' ? current.s : current.name}
+                            </div>
+                            <form onSubmit={handleCheck}>
+                                <input autoFocus className={`w-full text-center text-xl p-5 border-2 rounded-2xl font-bold transition-all focus:outline-none focus:ring-8 ${quizState.isRevealed ? 'bg-slate-50 border-slate-100' : 'border-slate-100 focus:border-indigo-400 focus:ring-indigo-50'}`} value={quizState.input} onChange={e => setQuizState({...quizState, input: e.target.value})} disabled={quizState.isRevealed} placeholder="..." />
+                                {quizState.isRevealed ? (
+                                    <div className="mt-8 animate-in slide-in-from-top-4 duration-500">
+                                        <div className={`text-2xl font-black mb-2 ${quizState.lastCorrect ? 'text-green-600' : 'text-red-600'}`}>{quizState.lastCorrect ? 'Richtig!' : 'Falsch!'}</div>
+                                        {!quizState.lastCorrect && <div className="text-slate-500 text-sm mb-6 font-medium tracking-tight">Korrekt: <span className="font-black text-indigo-600 uppercase underline underline-offset-8 decoration-2">{quizMode === 'sToN' ? current.name : current.s}</span></div>}
+                                        <button autoFocus type="button" onClick={nextQuestion} className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black active:scale-95 shadow-xl transition-all">Nächste Karte</button>
+                                    </div>
+                                ) : (
+                                    <button disabled={!quizState.input} className="w-full mt-6 bg-indigo-600 text-white py-5 rounded-2xl font-black active:scale-95 shadow-lg disabled:opacity-20 transition-all">Prüfen</button>
+                                )}
+                            </form>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (view === 'summary') {
+                const totalInRound = quizState.queue.length;
+                const perc = Math.round((quizState.correctCount / totalInRound) * 100);
+                const hasNewErrors = wrongIdsFromLastRound.size > 0;
+
+                return (
+                    <div className="min-h-screen flex items-center justify-center p-6 bg-slate-900">
+                        <div className="bg-white rounded-[3.5rem] shadow-2xl p-10 max-w-sm w-full text-center">
+                            <div className="text-7xl mb-6">{perc === 100 ? '🥇' : (perc >= 80 ? '🔥' : '📘')}</div>
+                            <h2 className="text-3xl font-black mb-2 text-slate-800">{perc === 100 ? 'Makellos!' : 'Runde beendet'}</h2>
+                            <p className="text-slate-400 mb-10 text-xs font-bold uppercase tracking-widest">{quizState.correctCount} von {totalInRound} richtig ({perc}%)</p>
+                            <div className="flex flex-col gap-3">
+                                {hasNewErrors ? (
+                                    <button onClick={() => startQuiz(quizMode, Array.from(wrongIdsFromLastRound))} className="w-full bg-red-600 text-white py-5 rounded-2xl font-black hover:bg-red-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-red-200 active:scale-95">
+                                        <Icon name="refresh-cw" size={16} /> Verbleibende Fehler ({wrongIdsFromLastRound.size}) üben
+                                    </button>
+                                ) : (
+                                    <div className="py-2 text-green-600 font-bold">Alles gewusst! 🎉</div>
+                                )}
+                                <button onClick={() => startQuiz(quizMode)} className="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black shadow-lg shadow-indigo-100 active:scale-95 transition-all">Ganze Auswahl nochmal</button>
+                                <button onClick={() => setView('selection')} className="w-full border-2 border-slate-100 text-slate-500 py-5 rounded-2xl font-black hover:bg-slate-50 transition-all">Zurück zum System</button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+        }
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+
+
