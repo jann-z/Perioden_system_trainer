@@ -1,0 +1,7 @@
+{
+  "name": "mein-projekt", // Hier kannst du einen Namen wählen
+  "compatibility_date": "2026-02-14",
+  "assets": {
+    "directory": "./dist" // Hier muss der Ordnerpfad zu deinen Dateien stehen
+  }
+}
